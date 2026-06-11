@@ -22,11 +22,9 @@ public class MazeApp extends JFrame {
     private final CardLayout cardLayout = new CardLayout();
     private final JPanel mainContainer = new JPanel(cardLayout);
 
-    // תוויות תצוגה בלבד
+    // תוויות תצוגה ושדות קלט בשורות קצרות ונקיות
     private final JLabel wallColorLabel = new JLabel("-"), pathColorLabel = new JLabel("-");
     private final JLabel gridStatusLabel = new JLabel("-"), gridColorLabel = new JLabel("-"), delayLabel = new JLabel("-");
-
-    // שדות קלט וכפתורים
     private final JTextField widthField = new JTextField("30", 4), heightField = new JTextField("30", 4);
     private final JButton getMazeButton = new JButton("GET MAZE"), checkSolutionButton = new JButton("Check Solution");
     private final MazePanel mazePanel = new MazePanel(config);
@@ -81,13 +79,17 @@ public class MazeApp extends JFrame {
         fetchConfig();
     }
 
+    // פונקציית עזר שמקצרת ומנקה את המרת הצבעים לטקסט
+    private String toHex(Color c) {
+        return "#" + Integer.toHexString(c.getRGB()).substring(2).toUpperCase();
+    }
+
     private void fetchConfig() {
         new Thread(() -> {
             try {
                 String url = "https://backend-qcf9.onrender.com/fm1/get-render-config?t=" + System.currentTimeMillis();
                 HttpURLConnection c = (HttpURLConnection) new URL(url).openConnection();
                 c.setUseCaches(false);
-                c.setRequestProperty("Cache-Control", "no-cache");
 
                 if (c.getResponseCode() == 200) {
                     BufferedReader r = new BufferedReader(new InputStreamReader(c.getInputStream()));
@@ -97,10 +99,10 @@ public class MazeApp extends JFrame {
                     config.parseJson(sb.toString());
 
                     SwingUtilities.invokeLater(() -> {
-                        wallColorLabel.setText("#" + Integer.toHexString(config.wallCellColor.getRGB()).substring(2).toUpperCase());
-                        pathColorLabel.setText("#" + Integer.toHexString(config.pathColor.getRGB()).substring(2).toUpperCase());
+                        wallColorLabel.setText(toHex(config.wallCellColor));
+                        pathColorLabel.setText(toHex(config.pathColor));
                         gridStatusLabel.setText(config.drawGrid ? "כן (True)" : "לא (False)");
-                        gridColorLabel.setText("#" + Integer.toHexString(config.gridColor.getRGB()).substring(2).toUpperCase());
+                        gridColorLabel.setText(toHex(config.gridColor));
                         delayLabel.setText(config.animationDelayMs + " ms");
                     });
                 }
@@ -110,42 +112,25 @@ public class MazeApp extends JFrame {
 
     private void handleGetMaze() {
         try {
-            // קריאת הערכים שרשם המשתמש בשדות הגודל וניקוי רווחים
             mazeWidth = Integer.parseInt(widthField.getText().trim());
             mazeHeight = Integer.parseInt(heightField.getText().trim());
 
-            // משתני עזר שיסמנו לנו האם הייתה חריגה בערכים
-            boolean invalidWidth = (mazeWidth < 5 || mazeWidth > 100);
-            boolean invalidHeight = (mazeHeight < 5 || mazeHeight > 100);
-
-            // אם יש חריגה, נעדכן גם את המשתנה הלוגי וגם את תיבת הטקסט על המסך ב-Thread של ה-UI
-            if (invalidWidth) {
-                mazeWidth = 30;
-                SwingUtilities.invokeLater(() -> widthField.setText("30"));
+            if (mazeWidth < 5 || mazeWidth > 100) {
+                mazeWidth = 30; SwingUtilities.invokeLater(() -> widthField.setText("30"));
             }
-            if (invalidHeight) {
-                mazeHeight = 30;
-                SwingUtilities.invokeLater(() -> heightField.setText("30"));
+            if (mazeHeight < 5 || mazeHeight > 100) {
+                mazeHeight = 30; SwingUtilities.invokeLater(() -> heightField.setText("30"));
             }
-
         } catch (Exception e) {
-            // במקרה של קלט שאינו מספר (למשל אותיות), נחזיר את שניהם ל-30 ונעדכן את המסך
-            mazeWidth = 30;
-            mazeHeight = 30;
-            SwingUtilities.invokeLater(() -> {
-                widthField.setText("30");
-                heightField.setText("30");
-            });
+            mazeWidth = 30; mazeHeight = 30;
+            SwingUtilities.invokeLater(() -> { widthField.setText("30"); heightField.setText("30"); });
         }
 
-        // איפוס נתוני פתרון ואנימציות קודמים לפני טעינת מבוך חדש
         solutionPath.clear();
         animatedPath.clear();
 
-        // פתיחת תהליכון רקע לשליפת ועיבוד התמונה מהאינטרנט
         new Thread(() -> {
             try {
-                // בניית כתובת ה-URL הדינמית הכוללת את הגודל המעודכן (30 במקרה של חריגה)
                 String url = String.format("https://backend-qcf9.onrender.com/fm1/get-maze-image?width=%d&height=%d", mazeWidth, mazeHeight);
                 HttpURLConnection c = (HttpURLConnection) new URL(url).openConnection();
                 if (c.getResponseCode() == 200) {
@@ -161,8 +146,6 @@ public class MazeApp extends JFrame {
                             mazeMatrix[y][x] = (((rgb >> 16) & 0xFF) == 255 && ((rgb >> 8) & 0xFF) == 255 && (rgb & 0xFF) == 255);
                         }
                     }
-
-                    // החלפת מסכים ועדכון הפאנל נעשים על ה-EDT בצורה בטוחה
                     SwingUtilities.invokeLater(() -> {
                         mazePanel.updateData(mazeMatrix, animatedPath);
                         cardLayout.show(mainContainer, "GAME");
