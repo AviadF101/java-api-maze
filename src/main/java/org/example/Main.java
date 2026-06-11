@@ -4,7 +4,10 @@ import javax.swing.SwingUtilities;
 
 public class Main {
     public static void main(String[] args) {
-        // הפעלת חלון המבוך בצורה בטוחה ב-Thread של ה-UI
-        SwingUtilities.invokeLater(MazeApp::new);
+        // הדרך הרשמית והבטוחה ביותר ב-Java להזניק חלונות גרפיים של Swing
+        SwingUtilities.invokeLater(() -> {
+            MazeApp app = new MazeApp();
+            app.setVisible(true); // שורת הקסם שמציגה את החלון על המסך!
+        });
     }
 }

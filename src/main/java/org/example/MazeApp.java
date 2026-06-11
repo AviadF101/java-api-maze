@@ -110,14 +110,42 @@ public class MazeApp extends JFrame {
 
     private void handleGetMaze() {
         try {
+            // קריאת הערכים שרשם המשתמש בשדות הגודל וניקוי רווחים
             mazeWidth = Integer.parseInt(widthField.getText().trim());
             mazeHeight = Integer.parseInt(heightField.getText().trim());
-        } catch (Exception e) { mazeWidth = 30; mazeHeight = 30; }
 
-        solutionPath.clear(); animatedPath.clear();
+            // משתני עזר שיסמנו לנו האם הייתה חריגה בערכים
+            boolean invalidWidth = (mazeWidth < 5 || mazeWidth > 100);
+            boolean invalidHeight = (mazeHeight < 5 || mazeHeight > 100);
 
+            // אם יש חריגה, נעדכן גם את המשתנה הלוגי וגם את תיבת הטקסט על המסך ב-Thread של ה-UI
+            if (invalidWidth) {
+                mazeWidth = 30;
+                SwingUtilities.invokeLater(() -> widthField.setText("30"));
+            }
+            if (invalidHeight) {
+                mazeHeight = 30;
+                SwingUtilities.invokeLater(() -> heightField.setText("30"));
+            }
+
+        } catch (Exception e) {
+            // במקרה של קלט שאינו מספר (למשל אותיות), נחזיר את שניהם ל-30 ונעדכן את המסך
+            mazeWidth = 30;
+            mazeHeight = 30;
+            SwingUtilities.invokeLater(() -> {
+                widthField.setText("30");
+                heightField.setText("30");
+            });
+        }
+
+        // איפוס נתוני פתרון ואנימציות קודמים לפני טעינת מבוך חדש
+        solutionPath.clear();
+        animatedPath.clear();
+
+        // פתיחת תהליכון רקע לשליפת ועיבוד התמונה מהאינטרנט
         new Thread(() -> {
             try {
+                // בניית כתובת ה-URL הדינמית הכוללת את הגודל המעודכן (30 במקרה של חריגה)
                 String url = String.format("https://backend-qcf9.onrender.com/fm1/get-maze-image?width=%d&height=%d", mazeWidth, mazeHeight);
                 HttpURLConnection c = (HttpURLConnection) new URL(url).openConnection();
                 if (c.getResponseCode() == 200) {
@@ -133,6 +161,8 @@ public class MazeApp extends JFrame {
                             mazeMatrix[y][x] = (((rgb >> 16) & 0xFF) == 255 && ((rgb >> 8) & 0xFF) == 255 && (rgb & 0xFF) == 255);
                         }
                     }
+
+                    // החלפת מסכים ועדכון הפאנל נעשים על ה-EDT בצורה בטוחה
                     SwingUtilities.invokeLater(() -> {
                         mazePanel.updateData(mazeMatrix, animatedPath);
                         cardLayout.show(mainContainer, "GAME");
