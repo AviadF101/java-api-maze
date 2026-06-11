@@ -174,5 +174,10 @@ public class MazeApp extends JFrame {
         }).start();
     }
 
-    public static void main(String[] args) { SwingUtilities.invokeLater(MazeApp::new); }
+    public static void main(String[] args) {
+        new Thread(() -> {
+            MazeApp app = new MazeApp();
+            app.setVisible(true);
+        }).start();
+    }
 }
