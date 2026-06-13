@@ -23,8 +23,8 @@ public class MazeApp extends JFrame {
     private final JPanel mainContainer = new JPanel(cardLayout);
 
     // תוויות תצוגה ושדות קלט בשורות קצרות ונקיות
-    private final JLabel wallColorLabel = new JLabel("-"), pathColorLabel = new JLabel("-");
-    private final JLabel gridStatusLabel = new JLabel("-"), gridColorLabel = new JLabel("-"), delayLabel = new JLabel("-");
+    private final JPanel wallColorBox = new JPanel(), pathColorBox = new JPanel(), gridColorBox = new JPanel();
+    private final JLabel gridStatusLabel = new JLabel("-"), delayLabel = new JLabel("-");
     private final JTextField widthField = new JTextField("30", 4), heightField = new JTextField("30", 4);
     private final JButton getMazeButton = new JButton("GET MAZE"), checkSolutionButton = new JButton("Check Solution");
     private final MazePanel mazePanel = new MazePanel(config);
@@ -36,6 +36,12 @@ public class MazeApp extends JFrame {
         setLocationRelativeTo(null);
 
         // --- מסך 1: הגדרות ---
+        // קביעת גודל אחיד למלבני הצבע כדי שייראו טוב במסך ההגדרות
+        Dimension boxSize = new Dimension(40, 20);
+        wallColorBox.setPreferredSize(boxSize);
+        pathColorBox.setPreferredSize(boxSize);
+        gridColorBox.setPreferredSize(boxSize);
+
         JPanel setupPanel = new JPanel(new GridBagLayout());
         setupPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
         GridBagConstraints gbc = new GridBagConstraints();
@@ -49,10 +55,11 @@ public class MazeApp extends JFrame {
         btnRef.addActionListener(e -> fetchConfig()); setupPanel.add(btnRef, gbc);
 
         gbc.gridwidth = 1;
-        gbc.gridy = 2; gbc.gridx = 0; setupPanel.add(new JLabel("צבע הקירות שנקבע:"), gbc); gbc.gridx = 1; setupPanel.add(wallColorLabel, gbc);
-        gbc.gridy = 3; gbc.gridx = 0; setupPanel.add(new JLabel("צבע נתיב הפתרון:"), gbc); gbc.gridx = 1; setupPanel.add(pathColorLabel, gbc);
+        // במקום להוסיף את ה-Labels הישנים, אנחנו מוסיפים את ה-Panels של הצבע
+        gbc.gridy = 2; gbc.gridx = 0; setupPanel.add(new JLabel("צבע הקירות שנקבע:"), gbc); gbc.gridx = 1; setupPanel.add(wallColorBox, gbc);
+        gbc.gridy = 3; gbc.gridx = 0; setupPanel.add(new JLabel("צבע נתיב הפתרון:"), gbc); gbc.gridx = 1; setupPanel.add(pathColorBox, gbc);
         gbc.gridy = 4; gbc.gridx = 0; setupPanel.add(new JLabel("האם לצייר קווי רשת:"), gbc); gbc.gridx = 1; setupPanel.add(gridStatusLabel, gbc);
-        gbc.gridy = 5; gbc.gridx = 0; setupPanel.add(new JLabel("צבע הרשת:"), gbc); gbc.gridx = 1; setupPanel.add(gridColorLabel, gbc);
+        gbc.gridy = 5; gbc.gridx = 0; setupPanel.add(new JLabel("צבע הרשת:"), gbc); gbc.gridx = 1; setupPanel.add(gridColorBox, gbc);
         gbc.gridy = 6; gbc.gridx = 0; setupPanel.add(new JLabel("זמן המתנה באנימציה:"), gbc); gbc.gridx = 1; setupPanel.add(delayLabel, gbc);
         gbc.gridy = 7; gbc.gridx = 0; setupPanel.add(new JLabel("רוחב המבוך הרצוי (Width):"), gbc); gbc.gridx = 1; setupPanel.add(widthField, gbc);
         gbc.gridy = 8; gbc.gridx = 0; setupPanel.add(new JLabel("גובה המבוך הרצוי (Height):"), gbc); gbc.gridx = 1; setupPanel.add(heightField, gbc);
@@ -99,11 +106,16 @@ public class MazeApp extends JFrame {
                     config.parseJson(sb.toString());
 
                     SwingUtilities.invokeLater(() -> {
-                        wallColorLabel.setText(toHex(config.wallCellColor));
-                        pathColorLabel.setText(toHex(config.pathColor));
+                        // צביעת המלבנים ישירות באובייקט הצבע שחזר מהשרת
+                        wallColorBox.setBackground(config.wallCellColor);
+                        pathColorBox.setBackground(config.pathColor);
+                        gridColorBox.setBackground(config.gridColor);
+
                         gridStatusLabel.setText(config.drawGrid ? "כן (True)" : "לא (False)");
-                        gridColorLabel.setText(toHex(config.gridColor));
                         delayLabel.setText(config.animationDelayMs + " ms");
+
+                        // רענון גרפי קטן כדי לוודא שג'אווה צובעת את הריבועים מייד על המסך
+                        mainContainer.repaint();
                     });
                 }
             } catch (Exception ex) { ex.printStackTrace(); }
