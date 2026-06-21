@@ -29,6 +29,13 @@ public class MazeApp extends JFrame {
     private final JButton getMazeButton = new JButton("GET MAZE"), checkSolutionButton = new JButton("Check Solution");
     private final MazePanel mazePanel = new MazePanel(config);
 
+    // // משימה 14: משתני מונים עבור הלחיצות
+    private int refreshCount = 0, getMazeCount = 0;
+
+    // // משימות 5 ו-14: תוויות טקסט חדשות להצגה על המסך
+    private final JLabel solutionLengthLabel = new JLabel("Solution length: -");
+    private final JLabel countsLabel = new JLabel("Refresh: 0 | Get Maze: 0");
+
     public MazeApp() {
         super("תרגיל Java — מבוך ויזואלי מ-API");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -70,12 +77,19 @@ public class MazeApp extends JFrame {
         // --- מסך 2: מבוך סופי ---
         JPanel gamePanel = new JPanel(new BorderLayout());
         JPanel gameControlPanel = new JPanel(new FlowLayout());
+
         checkSolutionButton.addActionListener(e -> handleCheckSolution());
         gameControlPanel.add(checkSolutionButton);
+
+        // // משימה 5: הוספת תווית אורך המסלול לסרגל המשחק
+        gameControlPanel.add(solutionLengthLabel);
 
         JButton btnBack = new JButton("חזור להגדרות");
         btnBack.addActionListener(e -> { if (!isAnimating) cardLayout.show(mainContainer, "SETUP"); });
         gameControlPanel.add(btnBack);
+
+        // // משימה 14: הוספת תווית המונים לסרגל המשחק כדי שהמרצה יראה את זה
+        gameControlPanel.add(countsLabel);
 
         gamePanel.add(gameControlPanel, BorderLayout.NORTH);
         gamePanel.add(mazePanel, BorderLayout.CENTER);
@@ -92,6 +106,10 @@ public class MazeApp extends JFrame {
     }
 
     private void fetchConfig() {
+        // // משימה 14: הגדלת מונה הרענון ועדכון הטקסט על המסך
+        refreshCount++;
+        countsLabel.setText("Refresh: " + refreshCount + " | Get Maze: " + getMazeCount);
+
         new Thread(() -> {
             try {
                 String url = "https://backend-qcf9.onrender.com/fm1/get-render-config?t=" + System.currentTimeMillis();
@@ -123,6 +141,10 @@ public class MazeApp extends JFrame {
     }
 
     private void handleGetMaze() {
+        // // משימה 14: הגדלת מונה בקשת המבוך ועדכון הטקסט על המסך
+        getMazeCount++;
+        countsLabel.setText("Refresh: " + refreshCount + " | Get Maze: " + getMazeCount);
+
         try {
             mazeWidth = Integer.parseInt(widthField.getText().trim());
             mazeHeight = Integer.parseInt(heightField.getText().trim());
@@ -140,6 +162,8 @@ public class MazeApp extends JFrame {
 
         solutionPath.clear();
         animatedPath.clear();
+        // // איפוס תווית המסלול בטעינת מבוך חדש
+        SwingUtilities.invokeLater(() -> solutionLengthLabel.setText("Solution length: -"));
 
         new Thread(() -> {
             try {
@@ -173,6 +197,9 @@ public class MazeApp extends JFrame {
         solutionPath = MazeSolver.solve(mazeMatrix);
 
         if (solutionPath.isEmpty()) { JOptionPane.showMessageDialog(this, "No solution found"); return; }
+
+        // // משימה 5: עדכון אורך המסלול לפי כמות הנקודות ב-ArrayList
+        solutionLengthLabel.setText("Solution length: " + solutionPath.size());
 
         isAnimating = true; checkSolutionButton.setEnabled(false);
         new Thread(() -> {
